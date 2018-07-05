@@ -4,12 +4,46 @@ const jsStandards = require('spike-js-standards')
 const pageId = require('spike-page-id')
 const Records = require('spike-records')
 const env = process.env.SPIKE_ENV
-
+const https = require('https')
+const fs = require('fs')
 const locals = {}
+let request = require('request')
+
+fs.readFile('data/site.json', (err, data) => {
+  if(err) throw err;
+  let obj = JSON.parse(data);
+  let videoId = obj.content[0].videoid;
+  const url = ''+videoId+'.json'
+
+  request.get('https://api.vimeo.com/videos/' + videoId, {
+    'auth': {
+      'bearer': '525b876a547a549ea9db0c236918d29b'
+    }
+  }, (e, r,  body)=> {
+    let obj = JSON.parse(body);
+    let images = JSON.stringify(obj.pictures);
+    let items = JSON.parse(images)
+    for (let i = 0; i < items.sizes.length; i++) {
+      if (items.sizes[i].width >= 1024 && items.sizes[i].width < 1400 ) {
+        console.log(items.sizes[i].link);
+        obj = {
+          "title": "vimeo",
+          "url": items.sizes[i].link
+        }
+        // fs.writeFile('data/video.json', JSON.stringify(obj), (err) =>{
+        //   if(err) throw err;
+        //   console.log("File has been saved!")
+        // })
+        return
+      }
+    }
+  });
+})
 
 const records = new Records({
   addDataTo: locals,
-  site: { file: 'data/site.json' }
+  site: { file: 'data/site.json' },
+  video: { file: 'data/video.json' }
 });
 
 module.exports = {
